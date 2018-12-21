@@ -37,7 +37,6 @@ class UserAccountSerializer(Serializer):
         ret['first_name']       = instance.user.first_name
         ret['last_name']        = instance.user.last_name
         ret['phone_number']     = instance.phone_number
-        ret['username']         = "*****" + instance.username[len(instance.username)-3:len(instance.username)]
         ret['image']            = image
         return ret
 
