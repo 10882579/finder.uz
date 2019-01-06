@@ -272,6 +272,7 @@ class UserAccountFollowingsSerializer(Serializer):
         ret['first_name']   = instance.following.user.first_name
         ret['last_name']    = instance.following.user.last_name
         ret['image']        = image
+        ret['following']    = True
         return ret
 
 class UserPostListSerializer(ModelSerializer):

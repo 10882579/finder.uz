@@ -133,7 +133,6 @@ class UserAccountByIdAPIView(APIView):
     def get(self, request, *args, **kwargs):
         return Response({}, status=HTTP_400_BAD_REQUEST)
 
-
 class UserAccountFollowingsAPIView(APIView):
     renderer_classes    = (JSONRenderer, )
 
