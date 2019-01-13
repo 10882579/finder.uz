@@ -125,6 +125,9 @@ class UserAccountByIdAPIView(APIView):
         auth        = authenticate(token)
         serializer  = UserAccountByIdSerializer(self.get_object(id))
 
+        if self.get_object(id) is None:
+            return Response({}, status=HTTP_404_NOT_FOUND)
+
         if auth is not None:
             following = self.user_following(account = auth.account, id = id)
 
