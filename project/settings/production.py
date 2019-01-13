@@ -25,7 +25,7 @@ SECRET_KEY = 'u94@$$d$1h-%y@^7d*t+)@!vd&9&-el0k)$7_5)op-lpdany5='
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['finder-uz.herokuapp.com']
 
 # Application definition
 
@@ -71,17 +71,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'project.wsgi.application'
-ASGI_APPLICATION = 'project.routing.application'
-
-redis_host = os.environ.get('REDIS_HOST', 'localhost')
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            "hosts": [os.environ.get('REDIS_URL', 'redis://localhost:6379')],
-        },
-    },
-}
 
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
@@ -142,11 +131,11 @@ STATICFILES_DIRS = [
 
 USE_S3 = True
 AWS_S3_FILE_OVERWRITE = False
-AWS_ACCESS_KEY_ID = ''
-AWS_SECRET_ACCESS_KEY = ''
-AWS_STORAGE_BUCKET_NAME = ''
+AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', '')
+AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
+AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME', '')
 AWS_QUERYSTRING_AUTH = False
-S3_URL = ''
+S3_URL = os.environ.get('S3_URL', '')
 
 MEDIA_ROOT = ''
 MEDIA_URL = S3_URL + '/media/'
