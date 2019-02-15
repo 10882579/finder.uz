@@ -61,7 +61,7 @@ class UserRegistrationAPIView(APIView):
             if account is not None:
                 token = self.get_authentication_token(account)
                 return Response({'token': token}, status=HTTP_200_OK)
-            return Response({}, status=HTTP_400_BAD_REQUEST)
+            return Response({}, status=HTTP_401_UNAUTHORIZED)
         elif errors is not None:
             return Response(errors, status=HTTP_400_BAD_REQUEST)
 
