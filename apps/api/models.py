@@ -29,7 +29,6 @@ class User(models.Model):
 
         self.save()
 
-
 class UserAccount(models.Model):
     user            = models.ForeignKey(User, on_delete=models.CASCADE)
     image           = models.FileField(blank=True, null=True, storage=MediaStorage())
@@ -71,7 +70,6 @@ class UserAccount(models.Model):
             self.image = image
         self.save()
 
-
 class Sessions(models.Model):
     account         = models.ForeignKey(UserAccount, on_delete=models.CASCADE)
     token           = models.CharField(max_length = 255)
@@ -87,7 +85,6 @@ class Sessions(models.Model):
 
     def __unicode__(self):
         return "%s %s | %s" % (self.account.user.first_name, self.account.user.last_name, self.token)
-
 
 class Posts(models.Model):
     account         = models.ForeignKey(UserAccount, on_delete=models.CASCADE)
@@ -157,7 +154,6 @@ class Posts(models.Model):
         self.sold = True
         self.save()
 
-
 class PostPhotos(models.Model):
     post            = models.ForeignKey(Posts, on_delete=models.CASCADE)
     image           = models.FileField(storage=PostPhotosStorage())
@@ -219,12 +215,11 @@ class ChatRoom(models.Model):
         return "Chat room by %s and %s" % (self.first, self.second)
 
     def __unicode__(self):
-        return "%s" % (self.first, self.second)
+        return "Chat room by %s and %s" % (self.first, self.second)
 
 class Message(models.Model):
     room            = models.ForeignKey(ChatRoom, on_delete=models.CASCADE)
-    first           = models.ForeignKey(UserAccount, on_delete=models.CASCADE, related_name='first_messager')
-    second          = models.ForeignKey(UserAccount, on_delete=models.CASCADE, related_name='second_messager')
+    sender          = models.ForeignKey(UserAccount, on_delete=models.CASCADE, related_name='sender')
     message         = models.TextField(blank=True, null=True)
     created_at      = models.DateTimeField(editable=False, auto_now_add = True)
     updated_at      = models.DateTimeField(editable=False, auto_now = True)
@@ -234,7 +229,7 @@ class Message(models.Model):
         ordering = ['created_at']
 
     def __str__(self):
-        return "%s" % (self.message)
+        return "Message by %s | %s" % (self.sender, self.message)
 
     def __unicode__(self):
-        return "Chat room by %s and %s" % (self.first, self.second)
+        return "Message by %s | %s" % (self.sender, self.message)
