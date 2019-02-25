@@ -22,6 +22,7 @@ urlpatterns = [
     url(r'^superuser/', admin.site.urls),
     url(r'^account/', include('apps.api.account.urls', namespace = 'account')),
     url(r'^post/', include('apps.api.post.urls', namespace = 'post')),
+    url(r'^chat/', include('apps.api.chat.urls', namespace = 'chat')),
 ]
 
 if settings.DEBUG:
