@@ -70,10 +70,9 @@ TEMPLATES = [
     },
 ]
 
-# WSGI_APPLICATION = 'project.wsgi.application'
-
+WSGI_APPLICATION = 'project.wsgi.application'
 ASGI_APPLICATION = 'project.routing.application'
-redis_host = os.environ.get('REDIS_HOST', 'localhost')
+
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
