@@ -3,6 +3,7 @@ from apps.api.functions import authenticate, random_token
 from apps.api.models import UserAccount, ChatRoom, Message
 from channels.generic.websocket import WebsocketConsumer
 from django.db.models import Q
+from django.conf import settings
 
 import json
 
@@ -43,6 +44,12 @@ class ChatConsumer(WebsocketConsumer):
 
 			return room_name
 
+	def get_user_image(self, obj):
+		if obj.sender.image:
+			return obj.sender.image.url
+		else:
+			return settings.DEFAULT_MALE_IMG
+
 	def connect(self):
 		if self.valid_chat():
 			self.room_name = self.get_room_name()
@@ -67,6 +74,7 @@ class ChatConsumer(WebsocketConsumer):
 			'account_id': message_obj.sender.id,
 			'first_name': message_obj.sender.user.first_name,
 			'last_name': message_obj.sender.user.last_name,
+			'image': self.get_user_image(message_obj),
 			'message': message_obj.message,
 			'created_at': message_obj.created_at.timestamp() * 1000
 		}
