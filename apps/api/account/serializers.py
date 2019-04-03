@@ -19,10 +19,10 @@ re_numeric          = re.compile(r'[0-9]+$')
 re_alphanumeric     = re.compile(r'[a-z0-9]+$')
 re_alphabetic       = re.compile(r'[a-zA-Z]+$')
 
-class UserAccountSerializer(Serializer):
+class UserAccountSerializer(ModelSerializer):
     class Meta:
         model = UserAccount
-        fields = []
+        fields = ['email']
 
     def to_representation(self, instance):
         ret = super().to_representation(instance)
@@ -36,7 +36,6 @@ class UserAccountSerializer(Serializer):
         ret['account_id']       = instance.id
         ret['first_name']       = instance.user.first_name
         ret['last_name']        = instance.user.last_name
-        ret['phone_number']     = instance.phone_number
         ret['image']            = image
         return ret
 
