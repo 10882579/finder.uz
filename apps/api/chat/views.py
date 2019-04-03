@@ -3,8 +3,8 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED
 from rest_framework.views import APIView
-from apps.api.models import ChatRoom, Message
-from apps.api.functions import authenticate
+from apps.api.models import ChatRoom, Message, UserAccount
+from apps.api.functions import authenticate, random_token
 
 from .serializers import ConversationSerializer, MessageSerializer
 
@@ -44,6 +44,17 @@ class MessagesAPIView(APIView):
     )
     if instance.exists():
       return instance.first()
+    else:
+      receiver = UserAccount.objects.filter(id = sec_account)
+      if receiver.exists():
+        if account != receiver.first():
+          room_name = random_token()
+          chat_room = ChatRoom.objects.create(
+            first = account, 
+            second = receiver.first(), 
+            room = room_name
+          )
+          return chat_room
     return None
 
   def post(self, request, *args, **kwargs):
