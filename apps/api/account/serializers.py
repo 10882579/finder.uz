@@ -292,7 +292,7 @@ class UserPostListSerializer(ModelSerializer):
 
     def to_representation(self, instance):
         ret = super().to_representation(instance)
-        ret['photos'] = self.get_post_photos(instance.id)
+        ret['images'] = self.get_post_photos(instance.id)
         ret['created_at'] = instance.created_at.timestamp() * 1000
         return ret
 
@@ -310,6 +310,6 @@ class UserSavedPostListSerializer(ModelSerializer):
         ret['title']    = instance.post.title
         ret['price']    = instance.post.price
         ret['sold']     = instance.post.sold
-        ret['photos']   = self.get_post_photos(instance.post)
+        ret['images']   = self.get_post_photos(instance.post)
         ret['created_at'] = instance.created_at.timestamp() * 1000
         return ret
