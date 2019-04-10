@@ -23,6 +23,7 @@ urlpatterns = [
     url(r'^account/', include('apps.api.account.urls', namespace = 'account')),
     url(r'^post/', include('apps.api.post.urls', namespace = 'post')),
     url(r'^chat/', include('apps.api.chat.urls', namespace = 'chat')),
+    url(r'^review/', include('apps.api.review.urls', namespace = 'review')),
 ]
 
 if settings.DEBUG:
