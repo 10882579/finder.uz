@@ -28,3 +28,30 @@ class AccountReviewsSerializer(ModelSerializer):
         }
         ret['created_at']   = instance.created_at.timestamp() * 1000
         return ret
+
+class CreateAccountReviewSerializer(ModelSerializer):
+
+    class Meta:
+        model = Review
+        fields = [
+            'rating',
+            'review'
+        ]
+
+    def validate(self, data):
+
+        rating = data.get('rating')
+        review = data.get('review')
+
+        if not rating and not len(review) > 0:
+            data['error'] = 'Barcha ma\'lumotlarni kiriting!'
+
+        return data
+
+    def save(self):
+        self.validated_data['reviewer'] = self.context.get('reviewer')
+        self.validated_data['reviewee'] = self.context.get('reviewee')
+        
+        Review.objects.create(**self.validated_data)
+
+
