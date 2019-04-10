@@ -8,7 +8,7 @@ from rest_framework.serializers import (
     FileField
 )
 
-from apps.api.models import UserAccount, User, UserAccountFollowers, Posts, PostPhotos, UserSavedPosts
+from apps.api.models import *
 from apps.api.functions import thumbnail
 
 import bcrypt
@@ -24,6 +24,15 @@ class UserAccountSerializer(ModelSerializer):
         model = UserAccount
         fields = ['email']
 
+    def get_user_rating(self):
+        rating = 0
+        reviews = Review.objects.filter(reviewee = self.instance)
+
+        for review in reviews:
+            rating += review.rating
+
+        return rating/len(reviews)
+
     def to_representation(self, instance):
         ret = super().to_representation(instance)
 
@@ -37,6 +46,7 @@ class UserAccountSerializer(ModelSerializer):
         ret['first_name']       = instance.user.first_name
         ret['last_name']        = instance.user.last_name
         ret['image']            = image
+        ret['rating']           = self.get_user_rating()
         return ret
 
 class UserLoginSerializer(Serializer):
@@ -238,6 +248,15 @@ class UserAccountByIdSerializer(Serializer):
     class Meta:
         model = UserAccount
         fields = ['id']
+    
+    def get_user_rating(self):
+        rating = 0
+        reviews = Review.objects.filter(reviewee = self.instance)
+
+        for review in reviews:
+            rating += review.rating
+
+        return rating/len(reviews)
 
     def to_representation(self, instance):
         ret = super().to_representation(instance)
@@ -252,6 +271,7 @@ class UserAccountByIdSerializer(Serializer):
         ret['first_name']   = instance.user.first_name
         ret['last_name']    = instance.user.last_name
         ret['image']        = image
+        ret['rating']       = self.get_user_rating()
         return ret
 
 class UserAccountFollowingsSerializer(Serializer):
