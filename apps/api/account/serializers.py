@@ -30,8 +30,11 @@ class UserAccountSerializer(ModelSerializer):
 
         for review in reviews:
             rating += review.rating
-
-        return rating/len(reviews)
+        
+        if rating != 0:
+            return "%.1f" % (rating/len(reviews))
+        else:
+            return rating
 
     def to_representation(self, instance):
         ret = super().to_representation(instance)
@@ -256,7 +259,10 @@ class UserAccountByIdSerializer(Serializer):
         for review in reviews:
             rating += review.rating
 
-        return rating/len(reviews)
+        if rating != 0:
+            return "%.1f" % (rating/len(reviews))
+        else:
+            return rating
 
     def to_representation(self, instance):
         ret = super().to_representation(instance)
