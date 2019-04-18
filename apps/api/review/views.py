@@ -31,14 +31,10 @@ class AccountReviewsByIdAPIView(APIView):
         return Review.objects.filter(reviewee = account)
 
     def post(self, request, *args, **kwargs):
-        token   = request.META.get('HTTP_X_AUTH_TOKEN')
-        auth    = authenticate(token)
-        if auth is not None:
-            data = self.get_object(kwargs.get('id'))
-            serializer = AccountReviewsSerializer(data = data, many=True)
-            serializer.is_valid(raise_exception=False)
-            return Response(serializer.data, status=HTTP_200_OK)
-        return Response({}, status=HTTP_401_UNAUTHORIZED)
+        data = self.get_object(kwargs.get('id'))
+        serializer = AccountReviewsSerializer(data = data, many=True)
+        serializer.is_valid(raise_exception=False)
+        return Response(serializer.data, status=HTTP_200_OK)
 
     def get(self, request, *args, **kwargs):
         return Response({}, status=HTTP_400_BAD_REQUEST)
