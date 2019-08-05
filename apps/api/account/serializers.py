@@ -45,11 +45,15 @@ class UserAccountSerializer(ModelSerializer):
         else:
             image = settings.DEFAULT_MALE_IMG
 
+        if self.context:
+            ret['token']        = self.context['token']
+
         ret['account_id']       = instance.id
         ret['first_name']       = instance.user.first_name
         ret['last_name']        = instance.user.last_name
         ret['image']            = image
         ret['rating']           = self.get_user_rating()
+
         return ret
 
 class UserLoginSerializer(Serializer):

@@ -12,7 +12,7 @@ from apps.api.functions import random_token, authenticate
 class UserLoginAPIView(APIView):
     renderer_classes = (JSONRenderer, )
 
-    def get_authentication_token(self, account):
+    def get_auth_token(self, account):
         token = random_token()
         all_sessions = Sessions.objects.filter(account = account)
         for s in all_sessions:
@@ -30,8 +30,11 @@ class UserLoginAPIView(APIView):
         if serializer.is_valid(raise_exception=False):
             errors = serializer.validated_data.get('errors')
             if errors is None:
-                token = self.get_authentication_token(account = serializer.validated_data['account'])
-                return Response({'token': token}, status=HTTP_200_OK)
+                account         = serializer.validated_data['account']
+                token           = self.get_auth_token(account = account)
+                serializer      = UserAccountSerializer(account, context={"token": token})
+                return Response(serializer.data, status=HTTP_200_OK)
+                
             elif errors is not None:
                 return Response(serializer.validated_data['errors'], status=HTTP_400_BAD_REQUEST)
 
@@ -43,7 +46,7 @@ class UserLoginAPIView(APIView):
 class UserRegistrationAPIView(APIView):
     renderer_classes = (JSONRenderer, )
 
-    def get_authentication_token(self, account):
+    def get_auth_token(self, account):
         token = random_token()
         Sessions.objects.create(
             account     = account,
@@ -59,8 +62,9 @@ class UserRegistrationAPIView(APIView):
         if errors is None:
             account = serializer.create()
             if account is not None:
-                token = self.get_authentication_token(account)
-                return Response({'token': token}, status=HTTP_200_OK)
+                token           = self.get_auth_token(account)
+                serializer      = UserAccountSerializer(account, context={"token": token})
+                return Response(serializer.data, status=HTTP_200_OK)
             return Response({}, status=HTTP_401_UNAUTHORIZED)
         elif errors is not None:
             return Response(errors, status=HTTP_400_BAD_REQUEST)

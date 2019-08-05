@@ -59,7 +59,7 @@ class PostByIdAPIView(APIView):
         return None
 
     def post_saved(self, account, instance):
-        saved       = UserSavedPosts.objects.filter(account = account, post = instance.id)
+        saved = UserSavedPosts.objects.filter(account = account, post = instance.id)
         if saved.exists():
             return True
         return False
