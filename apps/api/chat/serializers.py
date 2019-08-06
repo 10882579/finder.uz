@@ -3,6 +3,7 @@ from django.db.models import Q
 from rest_framework.serializers import ModelSerializer
 from apps.api.models import ChatRoom, Message
 
+from apps.api.functions import user_rating
 
 class ConversationSerializer(ModelSerializer):
     class Meta:
@@ -24,12 +25,14 @@ class ConversationSerializer(ModelSerializer):
             ret['first_name']   = instance.second.user.first_name
             ret['last_name']    = instance.second.user.last_name
             ret['image']        = self.get_user_image(instance.second)
+            ret['rating']       = user_rating(instance.second)
 
         elif instance.second == self.context['account']:
             ret['account_id']   = instance.first.id
             ret['first_name']   = instance.first.user.first_name
             ret['last_name']    = instance.first.user.last_name
             ret['image']        = self.get_user_image(instance.first)
+            ret['rating']       = user_rating(instance.first)
 
         return ret
 
