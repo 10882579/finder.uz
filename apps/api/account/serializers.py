@@ -9,7 +9,7 @@ from rest_framework.serializers import (
 )
 
 from apps.api.models import *
-from apps.api.functions import thumbnail
+from apps.api.functions import thumbnail, user_rating
 
 import bcrypt
 import re
@@ -23,18 +23,6 @@ class UserAccountSerializer(ModelSerializer):
     class Meta:
         model = UserAccount
         fields = ['email']
-
-    def get_user_rating(self):
-        rating = 0
-        reviews = Review.objects.filter(reviewee = self.instance)
-
-        for review in reviews:
-            rating += review.rating
-        
-        if rating != 0:
-            return "%.1f" % (rating/len(reviews))
-        else:
-            return rating
 
     def to_representation(self, instance):
         ret = super().to_representation(instance)
@@ -52,7 +40,7 @@ class UserAccountSerializer(ModelSerializer):
         ret['first_name']       = instance.user.first_name
         ret['last_name']        = instance.user.last_name
         ret['image']            = image
-        ret['rating']           = self.get_user_rating()
+        ret['rating']           = user_rating(instance)
 
         return ret
 
@@ -255,18 +243,6 @@ class UserAccountByIdSerializer(Serializer):
     class Meta:
         model = UserAccount
         fields = ['id']
-    
-    def get_user_rating(self):
-        rating = 0
-        reviews = Review.objects.filter(reviewee = self.instance)
-
-        for review in reviews:
-            rating += review.rating
-
-        if rating != 0:
-            return "%.1f" % (rating/len(reviews))
-        else:
-            return rating
 
     def to_representation(self, instance):
         ret = super().to_representation(instance)
@@ -281,7 +257,7 @@ class UserAccountByIdSerializer(Serializer):
         ret['first_name']   = instance.user.first_name
         ret['last_name']    = instance.user.last_name
         ret['image']        = image
-        ret['rating']       = self.get_user_rating()
+        ret['rating']       = user_rating(instance)
         return ret
 
 class UserAccountFollowingsSerializer(Serializer):
@@ -298,11 +274,12 @@ class UserAccountFollowingsSerializer(Serializer):
         else:
             image = settings.DEFAULT_MALE_IMG
 
-        ret['id']           = instance.following.id
+        ret['account_id']   = instance.following.id
         ret['first_name']   = instance.following.user.first_name
         ret['last_name']    = instance.following.user.last_name
         ret['image']        = image
         ret['following']    = True
+        ret['rating']       = user_rating(instance.following)
         return ret
 
 class UserPostListSerializer(ModelSerializer):

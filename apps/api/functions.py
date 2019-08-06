@@ -3,13 +3,10 @@ from django.core.files.base import ContentFile
 from io import BytesIO
 from PIL import Image
 
-from apps.api.models import Sessions
+from apps.api.models import Sessions, Review
 
 import random
-
-letters = ('a', 'b', 'c', 'd','e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z')
-numbers = ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9')
-
+import string
 
 def authenticate(token):
     ses_check = Sessions.objects.filter(token = token, on_session = True)
@@ -17,15 +14,26 @@ def authenticate(token):
         return ses_check.first()
     return None
 
+def user_rating(account):
+    rating = 0
+    reviews = Review.objects.filter(reviewee = account)
+
+    for review in reviews:
+        rating += review.rating
+    
+    if rating != 0:
+        return "%.1f" % (rating/len(reviews))
+    else:
+        return rating
 
 def random_token():
     key = ""
     for x in range(0, 50):
       num = random.randrange(0, 26)
-      if num > len(numbers)-1:
-      	key += letters[num]
+      if num > len(string.digits)-1:
+      	key += string.ascii_lowercase[num]
       else:
-      	key += numbers[num]
+      	key += string.digits[num]
     return key.lower()
 
 def thumbnail(**kwargs):

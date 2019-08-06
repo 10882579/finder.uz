@@ -9,7 +9,7 @@ from rest_framework.serializers import (
 )
 
 from apps.api.models import Posts, PostPhotos, Review
-from apps.api.functions import thumbnail
+from apps.api.functions import thumbnail, user_rating
 
 class CreatePostSerializer(ModelSerializer):
     image           = ListField(child = FileField(max_length=100000, allow_empty_file=True))
@@ -111,18 +111,6 @@ class PostByIdSerializer(ModelSerializer):
             return account.image.url
         return settings.DEFAULT_MALE_IMG
 
-    def get_user_rating(self):
-        rating = 0
-        reviews = Review.objects.filter(reviewee = self.instance.account)
-
-        for review in reviews:
-            rating += review.rating
-        
-        if rating != 0:
-            return "%.1f" % (rating/len(reviews))
-        else:
-            return rating
-
     def get_post_account(self, account):
 
         return {
@@ -130,7 +118,7 @@ class PostByIdSerializer(ModelSerializer):
             'first_name':   account.user.first_name,
             'last_name':    account.user.last_name,
             'image':        self.get_user_image(account),
-            'rating':       self.get_user_rating()
+            'rating':       user_rating(account)
         }
 
     def get_post_photos(self, post):
