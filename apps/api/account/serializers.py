@@ -235,7 +235,7 @@ class UserAccountUpdateSerializer(Serializer):
         account    = self.context.get('account')
         image      = self.validated_data.get('image')
         if image:
-            self.validated_data['image'] = thumbnail(folder = account.id, image = image, size = (350,350))
+            self.validated_data['image'] = thumbnail(account = account, image = image, size = (350,350))
         account.user.update(**self.validated_data)
         account.update(**self.validated_data)
 

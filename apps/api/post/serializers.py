@@ -57,7 +57,7 @@ class CreatePostSerializer(ModelSerializer):
         id = Posts.objects.create(**self.validated_data)
 
         for file in image:
-            img = thumbnail(folder = account.id, image = file, size = (350, 350))
+            img = thumbnail(account = account, image = file, size = (350, 350))
             PostPhotos.objects.create(post = id, image = img)
 
     def update(self):
@@ -70,7 +70,7 @@ class CreatePostSerializer(ModelSerializer):
             photo.image.delete()
             photo.delete()
         for file in image:
-            img = thumbnail(folder = post.account.id, image = file, size = (350, 350))
+            img = thumbnail(account = post.account, image = file, size = (350, 350))
             PostPhotos.objects.create(post = post, image = img)
 
 

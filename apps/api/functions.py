@@ -38,11 +38,12 @@ def random_token():
 
 def thumbnail(**kwargs):
     image   = kwargs.get('image')
-    folder  = kwargs.get('folder')
+    account = kwargs.get('account')
     size    = kwargs.get('size')
+    folder  = account.id
     if image is not None:
 
-        if settings.DEBUG:
+        if settings.DEBUG or account.is_admin:
             folder = 'TEST'
 
         img_io = BytesIO()

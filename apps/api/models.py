@@ -35,6 +35,7 @@ class UserAccount(models.Model):
     email           = models.CharField(max_length = 255, blank=True, null=True)
     username        = models.CharField(max_length = 255, blank=True, null=True)
     phone_number    = models.CharField(max_length = 255, blank=True, null=True)
+    is_admin        = models.BooleanField(default = False)
     password        = models.CharField(max_length = 255, blank=True, null=True)
     created_at      = models.DateTimeField(editable=False, auto_now_add = True)
     updated_at      = models.DateTimeField(editable=False, auto_now = True)
