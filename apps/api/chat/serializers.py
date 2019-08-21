@@ -34,6 +34,8 @@ class ConversationSerializer(ModelSerializer):
             ret['image']        = self.get_user_image(instance.first)
             ret['rating']       = user_rating(instance.first)
 
+        ret['room'] = instance.room
+
         return ret
 
 class MessageSerializer(ModelSerializer):
@@ -42,19 +44,11 @@ class MessageSerializer(ModelSerializer):
         fields = [
             'message',
         ]
-    
-    def get_user_image(self, account):
-        if account.image:
-            return account.image.url
-        return settings.DEFAULT_MALE_IMG
 
     def to_representation(self, instance):
         ret = super().to_representation(instance)
 
-        ret['account_id']   = instance.sender.id
-        ret['first_name']   = instance.sender.user.first_name
-        ret['last_name']    = instance.sender.user.last_name
-        ret['image']        = self.get_user_image(instance.sender)
+        ret['from']         = instance.sender.id
         ret['created_at']   = instance.created_at.timestamp() * 1000
 
         return ret
