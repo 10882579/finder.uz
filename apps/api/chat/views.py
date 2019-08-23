@@ -70,3 +70,26 @@ class MessagesAPIView(APIView):
 
   def get(self, request, *args, **kwargs):
     return Response({}, status=HTTP_400_BAD_REQUEST)
+
+
+class SaveMessageAPIView(APIView):
+
+  def get_chat_room(self, room):
+    chat_room = ChatRoom.objects.filter(room = room)
+    if chat_room.exists():
+      return chat_room.first()
+    return None
+
+  def post(self, request, *args, **kwargs):
+    token   = request.META.get('HTTP_X_AUTH_TOKEN')
+    auth    = authenticate(token)
+    message = request.data.get('message')
+    room    = self.get_chat_room(kwargs.get('room'))
+
+    if auth is not None and room is not None and len(message) > 0:
+      Message.objects.create(room = room, sender = auth.account, message = message)
+      return Response({"success": True}, status=HTTP_200_OK)
+    return Response({}, status=HTTP_401_UNAUTHORIZED)
+
+  def get(self, request, *args, **kwargs):
+    return Response({}, status=HTTP_400_BAD_REQUEST)

@@ -17,6 +17,7 @@ Django==1.11.21
 django-storages==1.6.6
 djangorestframework==3.9.1
 docutils==0.14
+gunicorn==19.9.0
 hiredis==1.0.0
 hyperlink==18.0.0
 idna==2.8
