@@ -1,11 +1,12 @@
 from django.conf import settings
+from django.db.models import Q
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
 
-from apps.api.models import Sessions, UserAccountFollowers, UserAccount
+from apps.api.models import Sessions, UserAccountFollowers, UserAccount, ChatRoom
 from apps.api.account.serializers import *
 from apps.api.functions import random_token, authenticate
 
@@ -121,21 +122,33 @@ class UserAccountByIdAPIView(APIView):
             return account.first()
         return None
 
+    def get_chat_room(self, auth, account):
+        if auth is not None:
+            room = ChatRoom.objects.filter( 
+                Q(first = account, second = auth.account) |
+                Q(first = auth.account, second = account)
+            )
+            if room.exists():
+                return room.first().room
+        return None
+
     def post(self, request, *args, **kwargs):
         token       = request.META.get('HTTP_X_AUTH_TOKEN')
-        id          = kwargs.get('id')
-        following   = False
+        account_id  = kwargs.get('id')
 
         auth        = authenticate(token)
-        serializer  = UserAccountByIdSerializer(self.get_object(id))
-
-        if self.get_object(id) is None:
-            return Response({}, status=HTTP_404_NOT_FOUND)
+        account     = self.get_object(account_id)
+        following   = False
 
         if auth is not None:
-            following = self.user_following(account = auth.account, id = id)
+            following = self.user_following(account = auth.account, id = account_id)
 
-        return Response({'account': serializer.data,'following': following}, status=HTTP_200_OK)
+        if account is not None:
+            room = self.get_chat_room(auth, account)
+            serializer = UserAccountByIdSerializer(account, context={'room': room})
+            return Response({'account': serializer.data,'following': following}, status=HTTP_200_OK)
+        else:
+            return Response({}, status=HTTP_404_NOT_FOUND)
 
     def get(self, request, *args, **kwargs):
         return Response({}, status=HTTP_400_BAD_REQUEST)

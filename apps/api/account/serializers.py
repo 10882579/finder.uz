@@ -252,6 +252,9 @@ class UserAccountByIdSerializer(Serializer):
             image = instance.image.url
         else:
             image = settings.DEFAULT_MALE_IMG
+        
+        if self.context['room'] is not None:
+            ret['room']     = self.context['room']
             
         ret['account_id']   = instance.id
         ret['first_name']   = instance.user.first_name
