@@ -8,6 +8,7 @@ from apps.api.functions import authenticate, random_token, get_user_account
 
 from .serializers import ConversationSerializer, MessageSerializer
 
+import os
 import requests
 
 class ChatRoomAPIView(APIView):
