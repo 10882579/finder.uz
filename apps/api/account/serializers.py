@@ -9,7 +9,7 @@ from rest_framework.serializers import (
 )
 
 from apps.api.models import *
-from apps.api.functions import thumbnail, user_rating
+from apps.api.functions import thumbnail, user_rating, random_token
 
 import bcrypt
 import re
@@ -22,7 +22,7 @@ re_alphabetic       = re.compile(r'[a-zA-Z]+$')
 class UserAccountSerializer(ModelSerializer):
     class Meta:
         model = UserAccount
-        fields = ['email']
+        fields = ['email', 'token']
 
     def to_representation(self, instance):
         ret = super().to_representation(instance)
@@ -32,9 +32,6 @@ class UserAccountSerializer(ModelSerializer):
             image = instance.image.url
         else:
             image = settings.DEFAULT_MALE_IMG
-
-        if self.context:
-            ret['token']        = self.context['token']
 
         ret['account_id']       = instance.id
         ret['first_name']       = instance.user.first_name
@@ -78,6 +75,11 @@ class UserLoginSerializer(Serializer):
             data['errors'] = errors
 
         return data
+
+    def update_account(self):
+        account = self.validated_data['account']
+        account.token = random_token()
+        account.save()
 
 class UserRegistrationSerializer(Serializer):
     first_name      = CharField(required = True)
@@ -159,7 +161,8 @@ class UserRegistrationSerializer(Serializer):
                 user            = user,
                 email           = email,
                 phone_number    = phone_number,
-                password        = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
+                password        = bcrypt.hashpw(password.encode(), bcrypt.gensalt()),
+                token           = random_token()
             )
 
         return None
@@ -252,9 +255,6 @@ class UserAccountByIdSerializer(Serializer):
             image = instance.image.url
         else:
             image = settings.DEFAULT_MALE_IMG
-        
-        if self.context['room'] is not None:
-            ret['room']     = self.context['room']
             
         ret['account_id']   = instance.id
         ret['first_name']   = instance.user.first_name

@@ -37,6 +37,7 @@ class UserAccount(models.Model):
     phone_number    = models.CharField(max_length = 255, blank=True, null=True)
     is_admin        = models.BooleanField(default = False)
     password        = models.CharField(max_length = 255, blank=True, null=True)
+    token           = models.CharField(max_length = 255, default="")
     created_at      = models.DateTimeField(editable=False, auto_now_add = True)
     updated_at      = models.DateTimeField(editable=False, auto_now = True)
     class Meta:
@@ -70,22 +71,6 @@ class UserAccount(models.Model):
             self.image.delete()
             self.image = image
         self.save()
-
-class Sessions(models.Model):
-    account         = models.ForeignKey(UserAccount, on_delete=models.CASCADE)
-    token           = models.CharField(max_length = 255)
-    on_session      = models.BooleanField()
-    created_at      = models.DateTimeField(editable=False, auto_now_add = True)
-    updated_at      = models.DateTimeField(editable=False, auto_now = True)
-    class Meta:
-        verbose_name_plural = 'Sessions'
-        ordering = ["account", '-created_at']
-
-    def __str__(self):
-        return "%s %s | %s" % (self.account.user.first_name, self.account.user.last_name, self.token)
-
-    def __unicode__(self):
-        return "%s %s | %s" % (self.account.user.first_name, self.account.user.last_name, self.token)
 
 class Posts(models.Model):
     account         = models.ForeignKey(UserAccount, on_delete=models.CASCADE)

@@ -13,31 +13,25 @@ class AccountReviewsAPIView(APIView):
     def get_object(self, account):
         return Review.objects.filter(reviewee = account)
 
-    def post(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         token   = request.META.get('HTTP_X_AUTH_TOKEN')
-        auth    = authenticate(token)
-        if auth is not None:
-            serializer = AccountReviewsSerializer(data = self.get_object(auth.account), many=True)
+        account = authenticate(token)
+        if account is not None:
+            serializer = AccountReviewsSerializer(data = self.get_object(account), many=True)
             serializer.is_valid(raise_exception=False)
             return Response(serializer.data, status=HTTP_200_OK)
         return Response({}, status=HTTP_401_UNAUTHORIZED)
-
-    def get(self, request, *args, **kwargs):
-        return Response({}, status=HTTP_400_BAD_REQUEST)
 
 class AccountReviewsByIdAPIView(APIView):
 
     def get_object(self, account):
         return Review.objects.filter(reviewee = account)
 
-    def post(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         data = self.get_object(kwargs.get('id'))
         serializer = AccountReviewsSerializer(data = data, many=True)
         serializer.is_valid(raise_exception=False)
         return Response(serializer.data, status=HTTP_200_OK)
-
-    def get(self, request, *args, **kwargs):
-        return Response({}, status=HTTP_400_BAD_REQUEST)
 
 class CreateAccountReviewAPIView(APIView):
 
@@ -51,14 +45,14 @@ class CreateAccountReviewAPIView(APIView):
 
     def post(self, request, *args, **kwargs):
         token       = request.META.get('HTTP_X_AUTH_TOKEN')
-        auth        = authenticate(token)
+        account     = authenticate(token)
         reviewee    = self.authorize_account(kwargs.get('id'))
         
-        if auth is not None and reviewee is not None:
+        if account is not None and reviewee is not None:
             serializer = CreateAccountReviewSerializer(
                 data = request.data, 
                 context={
-                    "reviewer": auth.account,
+                    "reviewer": account,
                     "reviewee": reviewee
                 }
             )

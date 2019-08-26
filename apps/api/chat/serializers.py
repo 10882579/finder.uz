@@ -3,14 +3,19 @@ from django.db.models import Q
 from rest_framework.serializers import ModelSerializer
 from apps.api.models import ChatRoom, Message
 
-from apps.api.functions import user_rating
-
 class ConversationSerializer(ModelSerializer):
     class Meta:
         model = ChatRoom
         fields = [
-            'id'
+            'id',
+            'room'
         ]
+
+    def get_last_message(self, room):
+        messages = Message.objects.filter(room = room).order_by('-created_at')
+        if len(messages) > 0:
+            return messages[0].message
+        return None
 
     def get_user_image(self, account):
         if account.image:
@@ -25,16 +30,14 @@ class ConversationSerializer(ModelSerializer):
             ret['first_name']   = instance.second.user.first_name
             ret['last_name']    = instance.second.user.last_name
             ret['image']        = self.get_user_image(instance.second)
-            ret['rating']       = user_rating(instance.second)
+            ret['last_message'] = self.get_last_message(instance)
 
         elif instance.second == self.context['account']:
             ret['account_id']   = instance.first.id
             ret['first_name']   = instance.first.user.first_name
             ret['last_name']    = instance.first.user.last_name
             ret['image']        = self.get_user_image(instance.first)
-            ret['rating']       = user_rating(instance.first)
-
-        ret['room'] = instance.room
+            ret['last_message'] = self.get_last_message(instance)
 
         return ret
 

@@ -6,34 +6,21 @@ from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_401_UN
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
 
-from apps.api.models import Sessions, UserAccountFollowers, UserAccount, ChatRoom
+from apps.api.models import UserAccountFollowers, UserAccount, ChatRoom
 from apps.api.account.serializers import *
-from apps.api.functions import random_token, authenticate
+from apps.api.functions import random_token, authenticate, get_user_account
 
 class UserLoginAPIView(APIView):
     renderer_classes = (JSONRenderer, )
-
-    def get_auth_token(self, account):
-        token = random_token()
-        all_sessions = Sessions.objects.filter(account = account)
-        for s in all_sessions:
-            s.delete()
-
-        Sessions.objects.create(
-            account     = account,
-            token       = token,
-            on_session  = True
-        )
-        return token
 
     def post(self, request, *args, **kwargs):
         serializer = UserLoginSerializer(data = request.data)
         if serializer.is_valid(raise_exception=False):
             errors = serializer.validated_data.get('errors')
             if errors is None:
-                account         = serializer.validated_data['account']
-                token           = self.get_auth_token(account = account)
-                serializer      = UserAccountSerializer(account, context={"token": token})
+                serializer.update_account()
+                account      = serializer.validated_data['account']
+                serializer   = UserAccountSerializer(account)
                 return Response(serializer.data, status=HTTP_200_OK)
                 
             elif errors is not None:
@@ -47,15 +34,6 @@ class UserLoginAPIView(APIView):
 class UserRegistrationAPIView(APIView):
     renderer_classes = (JSONRenderer, )
 
-    def get_auth_token(self, account):
-        token = random_token()
-        Sessions.objects.create(
-            account     = account,
-            token       = token,
-            on_session  = True
-        )
-        return token
-
     def post(self, request, *args, **kwargs):
         serializer = UserRegistrationSerializer(data = request.data)
         serializer.is_valid(raise_exception = False)
@@ -63,8 +41,7 @@ class UserRegistrationAPIView(APIView):
         if errors is None:
             account = serializer.create()
             if account is not None:
-                token           = self.get_auth_token(account)
-                serializer      = UserAccountSerializer(account, context={"token": token})
+                serializer = UserAccountSerializer(account)
                 return Response(serializer.data, status=HTTP_200_OK)
             return Response({}, status=HTTP_401_UNAUTHORIZED)
         elif errors is not None:
@@ -78,27 +55,23 @@ class UserRegistrationAPIView(APIView):
 class UserAccountAPIView(APIView):
     renderer_classes    = (JSONRenderer, )
 
-    def post(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         token   = request.META.get('HTTP_X_AUTH_TOKEN')
-        auth    = authenticate(token)
-        if auth is not None:
-            serializer = UserAccountSerializer(auth.account)
+        account = authenticate(token)
+        if account is not None:
+            serializer = UserAccountSerializer(account)
             return Response(serializer.data, status=HTTP_200_OK)
         return Response({}, status=HTTP_401_UNAUTHORIZED)
 
-    def get(self, request, *args, **kwargs):
-        return Response({}, status=HTTP_400_BAD_REQUEST)
-
 class UserAccountUpdateAPIView(APIView):
-    # parser_classes      = (MultiPartParser, FormParser)
     renderer_classes    = (JSONRenderer, )
 
     def post(self, request, *args, **kwargs):
-        token  = request.META.get('HTTP_X_AUTH_TOKEN')
-        auth   = authenticate(token)
+        token   = request.META.get('HTTP_X_AUTH_TOKEN')
+        account = authenticate(token)
 
-        if auth is not None:
-            serializer = UserAccountUpdateSerializer(data = request.data, context={'account': auth.account})
+        if account is not None:
+            serializer = UserAccountUpdateSerializer(data = request.data, context={'account': account})
             serializer.is_valid(raise_exception=False)
             if serializer.validated_data.get('errors'):
                 return Response(serializer.validated_data['errors'], status=HTTP_400_BAD_REQUEST)
@@ -110,48 +83,39 @@ class UserAccountUpdateAPIView(APIView):
 class UserAccountByIdAPIView(APIView):
     renderer_classes    = (JSONRenderer, )
 
-    def user_following(self, account, id):
-        account = UserAccountFollowers.objects.filter(account = account, following = id)
-        if account.exists():
+    def is_following(self, account, id):
+        following = UserAccountFollowers.objects.filter(account = account, following = id)
+        if following.exists():
             return True
         return False
 
-    def get_object(self, id):
-        account = UserAccount.objects.filter(id = id)
-        if account.exists():
-            return account.first()
-        return None
-
-    def get_chat_room(self, auth, account):
-        if auth is not None:
+    def get_chat_room(self, first, second):
+        if first is not None:
             room = ChatRoom.objects.filter( 
-                Q(first = account, second = auth.account) |
-                Q(first = auth.account, second = account)
+                Q(first = first, second = second) |
+                Q(first = second, second = first)
             )
             if room.exists():
                 return room.first().room
         return None
 
-    def post(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         token       = request.META.get('HTTP_X_AUTH_TOKEN')
         account_id  = kwargs.get('id')
 
-        auth        = authenticate(token)
-        account     = self.get_object(account_id)
-        following   = False
-
-        if auth is not None:
-            following = self.user_following(account = auth.account, id = account_id)
+        account         = authenticate(token)
+        account_by_id   = get_user_account(account_id)
+        following       = False
 
         if account is not None:
-            room = self.get_chat_room(auth, account)
-            serializer = UserAccountByIdSerializer(account, context={'room': room})
+            following = self.is_following(account = account, id = account_id)
+
+        if account_by_id is not None:
+            room = self.get_chat_room(account, account_by_id)
+            serializer = UserAccountByIdSerializer(account_by_id, context={'room': room})
             return Response({'account': serializer.data,'following': following}, status=HTTP_200_OK)
         else:
             return Response({}, status=HTTP_404_NOT_FOUND)
-
-    def get(self, request, *args, **kwargs):
-        return Response({}, status=HTTP_400_BAD_REQUEST)
 
 class UserAccountFollowingsAPIView(APIView):
     renderer_classes    = (JSONRenderer, )
@@ -172,31 +136,21 @@ class UserAccountFollowingsAPIView(APIView):
         return False
 
 
-    def post(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         token       = request.META.get('HTTP_X_AUTH_TOKEN')
         page        = kwargs.get('page')
-        auth        = authenticate(token)
+        account     = authenticate(token)
 
-        if auth is not None:
-            data = self.get_object(account = auth.account, page = page)
+        if account is not None:
+            data = self.get_object(account = account, page = page)
             if data is not False:
                 serializer = UserAccountFollowingsSerializer(data, many=True)
                 return Response(serializer.data, status=HTTP_200_OK)
             return Response({}, status=HTTP_400_BAD_REQUEST)
         return Response({}, status=HTTP_401_UNAUTHORIZED)
 
-    def get(self, request, *args, **kwargs):
-        return Response({}, status=HTTP_400_BAD_REQUEST)
-
 class UserAccountFollowAPIView(APIView):
     renderer_classes    = (JSONRenderer, )
-
-    def get_object(self, id):
-        account = UserAccount.objects.filter(id = id)
-        if account.exists():
-            return account.first()
-
-        return None
 
     def create_or_delete_object(self, account, id):
         check = UserAccountFollowers.objects.filter(
@@ -215,12 +169,12 @@ class UserAccountFollowAPIView(APIView):
     def post(self, request, *args, **kwargs):
         token   = request.META.get('HTTP_X_AUTH_TOKEN')
         id      = kwargs.get('id')
-        auth    = authenticate(token)
+        account = authenticate(token)
 
-        if auth is not None:
-            account = self.get_object(id)
-            if account is not None and account.id != auth.account.id:
-                self.create_or_delete_object(auth.account, account)
+        if account is not None:
+            following_account = get_user_account(id)
+            if following_account is not None and following_account.id != account.id:
+                self.create_or_delete_object(account, following_account)
                 return Response({'updated': True}, status=HTTP_200_OK)
             return Response({}, status=HTTP_404_NOT_FOUND)
         return Response({}, status=HTTP_401_UNAUTHORIZED)
@@ -231,13 +185,13 @@ class UserAccountFollowAPIView(APIView):
 class UserPostListAPIView(APIView):
     renderer_classes = (JSONRenderer, )
 
-    def get_object(self, auth, **kwargs):
+    def get_object(self, account, **kwargs):
         id              = kwargs.get('id')
         page            = kwargs.get('page')
         all_posts       = Posts.objects.filter(account=id)
 
-        if auth is not None:
-            if str(auth.account.id) != str(id):
+        if account is not None:
+            if str(account.id) != str(id):
                 all_posts = all_posts.filter(posted = True, sold = False)
         else:
             all_posts = all_posts.filter(posted = True, sold = False)
@@ -252,17 +206,14 @@ class UserPostListAPIView(APIView):
 
         return None
 
-    def post(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         token   = request.META.get('HTTP_X_AUTH_TOKEN')
-        auth    = authenticate(token)
-        data    = self.get_object(auth, **kwargs)
+        account = authenticate(token)
+        data    = self.get_object(account, **kwargs)
         if data is not None:
             serializer = UserPostListSerializer(data, many=True)
             return Response(serializer.data, status=HTTP_200_OK)
         return Response([], status=HTTP_200_OK)
-
-    def get(self, request, *args, **kwargs):
-        return Response({}, status=HTTP_400_BAD_REQUEST)
 
 class UserSavedPostListAPIView(APIView):
     renderer_classes = (JSONRenderer, )
@@ -280,17 +231,14 @@ class UserSavedPostListAPIView(APIView):
 
         return None
 
-    def post(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         token   = request.META.get('HTTP_X_AUTH_TOKEN')
         page    = kwargs.get('page')
-        auth    = authenticate(token)
-        if auth is not None:
-            data = self.get_object(account=auth.account, page = page)
+        account = authenticate(token)
+        if account is not None:
+            data = self.get_object(account=account, page = page)
             if data is not None:
                 serializer = UserSavedPostListSerializer(data, many=True)
                 return Response(serializer.data, status=HTTP_200_OK)
             return Response([], status=HTTP_200_OK)
         return Response(status=HTTP_400_BAD_REQUEST)
-
-    def get(self, request, *args, **kwargs):
-        return Response({}, status=HTTP_400_BAD_REQUEST)

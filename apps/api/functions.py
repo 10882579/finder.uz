@@ -3,15 +3,21 @@ from django.core.files.base import ContentFile
 from io import BytesIO
 from PIL import Image
 
-from apps.api.models import Sessions, Review
+from apps.api.models import UserAccount, Review
 
 import random
 import string
 
 def authenticate(token):
-    ses_check = Sessions.objects.filter(token = token, on_session = True)
+    ses_check = UserAccount.objects.filter(token = token)
     if ses_check.exists():
         return ses_check.first()
+    return None
+
+def get_user_account(id):
+    account = UserAccount.objects.filter(id = id)
+    if account.exists():
+        return account.first()
     return None
 
 def user_rating(account):

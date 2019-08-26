@@ -15,9 +15,9 @@ class CreatePostAPIView(APIView):
 
     def post(self, request, *args, **kwargs):
         token   = request.META.get('HTTP_X_AUTH_TOKEN')
-        auth    = authenticate(token)
-        if auth is not None:
-            serializer = CreatePostSerializer(data = request.data, context={'account': auth.account})
+        account = authenticate(token)
+        if account is not None:
+            serializer = CreatePostSerializer(data = request.data, context={'account': account})
             serializer.is_valid(raise_exception=False)
             if serializer.validated_data.get('errors') is None:
                 serializer.save()
@@ -38,16 +38,13 @@ class PostListAPIView(APIView):
             sold = False
         ).order_by('-created_at')
 
-    def post(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         premium = PostListSerializer(self.get_posts(premium = True), many=True)
         regular = PostListSerializer(self.get_posts(premium = False), many=True)
         return Response({
                             'premium': premium.data,
                             'regular': regular.data
                         }, status=HTTP_200_OK)
-
-    def get(self, request, *args, **kwargs):
-        return Response({}, status=HTTP_400_BAD_REQUEST)
 
 class PostByIdAPIView(APIView):
     renderer_classes = (JSONRenderer, )
@@ -65,22 +62,19 @@ class PostByIdAPIView(APIView):
         return False
 
 
-    def post(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         token       = request.META.get('HTTP_X_AUTH_TOKEN')
-        auth        = authenticate(token)
+        account     = authenticate(token)
 
         instance    = self.get_object(id = kwargs.get('id'))
         if instance is not None:
             data = PostByIdSerializer(instance).data
-            if auth is not None:
-                data['saved'] = self.post_saved(auth.account, instance)
-                if auth.account == instance.account:
+            if account is not None:
+                data['saved'] = self.post_saved(account, instance)
+                if account == instance.account:
                     data['posted'] = instance.posted
             return Response(data, status=HTTP_200_OK)
         return Response({}, status=HTTP_404_NOT_FOUND)
-
-    def get(self, request, *args, **kwargs):
-        return Response({}, status=HTTP_400_BAD_REQUEST)
 
 class EditPostByIdAPIView(APIView):
     renderer_classes = (JSONRenderer, )
@@ -94,16 +88,16 @@ class EditPostByIdAPIView(APIView):
 
     def post(self, request, *args, **kwargs):
         token       = request.META.get('HTTP_X_AUTH_TOKEN')
-        auth        = authenticate(token)
+        account     = authenticate(token)
 
-        if auth is not None:
+        if account is not None:
             context = {
-                'post': self.get_object(auth.account, **kwargs)
+                'post': self.get_object(account, **kwargs)
             }
             serializer = CreatePostSerializer(data = request.data, context = context)
             serializer.is_valid(raise_exception=False)
             if serializer.validated_data.get('errors') is None:
-                self.get_object(auth.account, **kwargs).update(serializer.validated_data)
+                self.get_object(account, **kwargs).update(serializer.validated_data)
                 serializer.update()
                 return Response({'uploaded': True}, status=HTTP_200_OK)
             return Response(serializer.validated_data.get('errors'), status=HTTP_400_BAD_REQUEST)
@@ -135,10 +129,10 @@ class SavePostByIdAPIView(APIView):
 
     def post(self, request, *args, **kwargs):
         token       = request.META.get('HTTP_X_AUTH_TOKEN')
-        auth        = authenticate(token)
+        account     = authenticate(token)
 
-        if auth is not None:
-            return self.save_or_delete_object(auth.account, **kwargs)
+        if account is not None:
+            return self.save_or_delete_object(account, **kwargs)
         return Response({}, status=HTTP_401_UNAUTHORIZED)
 
     def get(self, request, *args, **kwargs):
@@ -155,10 +149,10 @@ class SoldPostByIdAPIView(APIView):
 
     def post(self, request, *args, **kwargs):
         token       = request.META.get('HTTP_X_AUTH_TOKEN')
-        auth        = authenticate(token)
+        account     = authenticate(token)
 
-        if auth is not None:
-            instance = self.get_object(auth.account, **kwargs)
+        if account is not None:
+            instance = self.get_object(account, **kwargs)
             if instance is not None:
                 instance.update_sold()
                 return Response({'updated': True}, status=HTTP_200_OK)
@@ -187,10 +181,10 @@ class DeletePostByIdAPIView(APIView):
 
     def post(self, request, *args, **kwargs):
         token       = request.META.get('HTTP_X_AUTH_TOKEN')
-        auth        = authenticate(token)
+        account     = authenticate(token)
 
-        if auth is not None:
-            instance = self.get_object(auth.account, **kwargs)
+        if account is not None:
+            instance = self.get_object(account, **kwargs)
             if instance is not None:
                 self.delete_object_photos(instance.id)
                 instance.delete()
