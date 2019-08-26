@@ -7,9 +7,11 @@ Automat==0.7.0
 bcrypt==3.1.4
 boto3==1.7.45
 botocore==1.10.84
+certifi==2019.6.16
 cffi==1.12.2
 channels==2.1.7
 channels-redis==2.3.3
+chardet==3.0.4
 constantly==15.1.0
 daphne==2.2.5
 dj-database-url==0.5.0
@@ -30,9 +32,11 @@ pycparser==2.19
 PyHamcrest==1.9.0
 python-dateutil==2.8.0
 pytz==2018.9
+requests==2.22.0
 s3transfer==0.1.13
 six==1.12.0
 Twisted==19.2.1
 txaio==18.8.1
+urllib3==1.25.3
 whitenoise==3.3.1
 zope.interface==4.6.0
