@@ -3,7 +3,7 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED
 from rest_framework.views import APIView
-from apps.api.models import ChatRoom, Message, UserAccount
+from apps.api.models import ChatRoom, Message
 from apps.api.functions import authenticate, random_token, get_user_account
 
 from .serializers import ConversationSerializer, MessageSerializer
@@ -113,7 +113,12 @@ class SaveMessageAPIView(APIView):
       if account == room.first:
         reciever  = room.second
         sender    = room.first
-      self.notify_user(reciever.token, {"from": sender.id, "message": message, "chat_id": room.id})
+      self.notify_user(reciever.token, {
+        "type": "chat_message",
+        "from": sender.id, 
+        "message": message, 
+        "chat_id": room.id
+      })
       Message.objects.create(room = room, sender = sender, message = message)
 
       return Response({"success": True}, status=HTTP_200_OK)

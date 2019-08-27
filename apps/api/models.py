@@ -247,3 +247,17 @@ class Review(models.Model):
             self.reviewee.user.first_name,
             self.rating
         )
+
+class Notification(models.Model):
+    account         = models.ForeignKey(UserAccount)
+    title           = models.CharField(max_length=255)
+    message         = models.TextField()
+    read            = models.BooleanField(default = False)
+    created_at      = models.DateTimeField(editable=False, auto_now_add = True)
+    updated_at      = models.DateTimeField(editable=False, auto_now = True)
+
+    def __str__(self):
+        return "%s. Notification to %s" % (
+            self.id,
+            self.account.user.first_name, 
+        )

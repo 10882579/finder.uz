@@ -24,6 +24,7 @@ urlpatterns = [
     url(r'^post/', include('apps.api.post.urls', namespace = 'post')),
     url(r'^chat/', include('apps.api.chat.urls', namespace = 'chat')),
     url(r'^review/', include('apps.api.review.urls', namespace = 'review')),
+    url(r'^notification/', include('apps.api.notification.urls', namespace = 'notification')),
 ]
 
 if settings.DEBUG:
