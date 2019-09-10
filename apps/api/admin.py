@@ -1,4 +1,5 @@
 from django.contrib import admin
+from requests.exceptions import ConnectionError
 
 from .models import *
 
@@ -9,8 +10,11 @@ import requests
 class PostAdmin(admin.ModelAdmin):
   
   def notify_user(self, token, data):
-    url = os.environ.get('SOCKET_SERVER', 'http://localhost:3000')
-    r = requests.post(url + '/notify/' + token + '/', data=data)
+    try:
+      url = os.environ.get('SOCKET_SERVER', 'http://localhost:3000')
+      r = requests.post(url + '/notify/' + token + '/', data=data)
+    except ConnectionError:
+      pass
 
   def save_model(self, request, obj, form, change):
       obj.user = request.user

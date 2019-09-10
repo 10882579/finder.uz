@@ -31,20 +31,40 @@ class CreatePostAPIView(APIView):
 class PostListAPIView(APIView):
     renderer_classes = (JSONRenderer, )
 
-    def get_posts(self, premium):
-        return Posts.objects.filter(
-            premium = premium,
-            posted = True,
-            sold = False
-        ).order_by('-created_at')
+    def search_filter(self, search, params):
+
+        posts = []
+        re_state = params.get('state') if params.get('state') else r'([a-zA-Z]*)'
+        re_category = params.get('category') if params.get('category') else r'([a-zA-Z]*)'
+        re_condition = params.get('condition') if params.get('condition') else r'([a-zA-Z]*)'
+        re_city_town = params.get('city_town') if params.get('city_town') else r'([a-zA-Z]*)'
+        gte = params.get('gte') if params.get('gte') else 0
+        lte = params.get('lte') if params.get('lte') else 2147483647
+
+        for i in search:
+            lst = Posts.objects.filter(
+                title__contains=i,
+                condition__regex=re_condition,
+                city_town__regex=re_city_town,
+                category__regex=re_category,
+                price__range=(gte, lte),
+                state__regex=re_state,
+                posted = True,
+                sold = False
+            )
+            for j in lst:
+                posts.append(j)
+        return list(set(posts))
 
     def get(self, request, *args, **kwargs):
-        premium = PostListSerializer(self.get_posts(premium = True), many=True)
-        regular = PostListSerializer(self.get_posts(premium = False), many=True)
-        return Response({
-                            'premium': premium.data,
-                            'regular': regular.data
-                        }, status=HTTP_200_OK)
+        search = request.query_params.get('search')
+        posts = Posts.objects.all().exclude(posted = False)
+        
+        if search:
+            posts = self.search_filter(search, request.query_params)
+            
+        serializer = PostListSerializer(posts, many=True)
+        return Response(serializer.data, status=HTTP_200_OK)
 
 class PostByIdAPIView(APIView):
     renderer_classes = (JSONRenderer, )

@@ -79,14 +79,12 @@ class PostListSerializer(ModelSerializer):
         model = Posts
         fields = [
             'id',
-            'premium',
             'price'
         ]
 
     def to_representation(self, instance):
         ret = super().to_representation(instance)
         ret['photos'] = { 'uri': PostPhotos.objects.filter(post = instance.id)[0].image.url }
-        ret['created_at'] = instance.created_at.timestamp() * 1000
         return ret
 
 class PostByIdSerializer(ModelSerializer):

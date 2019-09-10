@@ -78,7 +78,7 @@ class Posts(models.Model):
     category        = models.CharField(max_length = 255)
     condition       = models.CharField(max_length = 255)
     description     = models.TextField(blank=True, null=True)
-    price           = models.CharField(max_length = 255)
+    price           = models.IntegerField(default = 0)
     negotiable      = models.BooleanField(default = True)
     city_town       = models.CharField(max_length = 255)
     state           = models.CharField(max_length = 255)
