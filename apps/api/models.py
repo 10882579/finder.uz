@@ -2,8 +2,10 @@ from django.db import models
 from project.s3utils import *
 
 import bcrypt
+import uuid
 
 class User(models.Model):
+    id              = models.CharField(max_length = 1024, primary_key=True, default=uuid.uuid4, editable=False)
     first_name      = models.CharField(max_length = 255)
     last_name       = models.CharField(max_length = 255)
     created_at      = models.DateTimeField(editable=False, auto_now_add = True)
@@ -30,6 +32,7 @@ class User(models.Model):
         self.save()
 
 class UserAccount(models.Model):
+    id              = models.CharField(max_length = 1024, primary_key=True, default=uuid.uuid4, editable=False)
     user            = models.ForeignKey(User, on_delete=models.CASCADE)
     image           = models.FileField(blank=True, null=True, storage=MediaStorage())
     email           = models.CharField(max_length = 255, blank=True, null=True)
@@ -73,6 +76,7 @@ class UserAccount(models.Model):
         self.save()
 
 class Posts(models.Model):
+    id              = models.CharField(max_length = 1024, primary_key=True, default=uuid.uuid4, editable=False)
     account         = models.ForeignKey(UserAccount, on_delete=models.CASCADE)
     title           = models.CharField(max_length = 255)
     category        = models.CharField(max_length = 255)
@@ -141,6 +145,7 @@ class Posts(models.Model):
         self.save()
 
 class PostPhotos(models.Model):
+    id              = models.CharField(max_length = 1024, primary_key=True, default=uuid.uuid4, editable=False)
     post            = models.ForeignKey(Posts, on_delete=models.CASCADE)
     image           = models.FileField(storage=PostPhotosStorage())
     created_at      = models.DateTimeField(editable=False, auto_now_add = True)
@@ -157,6 +162,7 @@ class PostPhotos(models.Model):
         return "%s. Photos by %s" % (self.id, self.post)
 
 class UserSavedPosts(models.Model):
+    id              = models.CharField(max_length = 1024, primary_key=True, default=uuid.uuid4, editable=False)
     account         = models.ForeignKey(UserAccount, on_delete=models.CASCADE)
     post            = models.ForeignKey(Posts, on_delete=models.CASCADE)
     created_at      = models.DateTimeField(editable=False, auto_now_add = True)
@@ -172,6 +178,7 @@ class UserSavedPosts(models.Model):
         return "Saved Post | %s - %s" % (self.account, self.post)
 
 class UserAccountFollowers(models.Model):
+    id              = models.CharField(max_length = 1024, primary_key=True, default=uuid.uuid4, editable=False)
     account         = models.ForeignKey(UserAccount, on_delete=models.CASCADE, related_name='follower')
     following       = models.ForeignKey(UserAccount, on_delete=models.CASCADE, related_name='following')
     created_at      = models.DateTimeField(editable=False, auto_now_add = True)
@@ -187,6 +194,7 @@ class UserAccountFollowers(models.Model):
         return "%s is following %s" % (self.account, self.following)
 
 class ChatRoom(models.Model):
+    id              = models.CharField(max_length = 1024, primary_key=True, default=uuid.uuid4, editable=False)
     room            = models.CharField(max_length=255)
     first           = models.ForeignKey(UserAccount, on_delete=models.CASCADE, related_name='first_user')
     second          = models.ForeignKey(UserAccount, on_delete=models.CASCADE, related_name='second_user')
@@ -204,6 +212,7 @@ class ChatRoom(models.Model):
         return "Chat room by %s and %s" % (self.first, self.second)
 
 class Message(models.Model):
+    id              = models.CharField(max_length = 1024, primary_key=True, default=uuid.uuid4, editable=False)  
     room            = models.ForeignKey(ChatRoom, on_delete=models.CASCADE)
     sender          = models.ForeignKey(UserAccount, on_delete=models.CASCADE, related_name='sender')
     message         = models.TextField(blank=True, null=True)
@@ -221,6 +230,7 @@ class Message(models.Model):
         return "Message by %s | %s" % (self.sender, self.message)
 
 class Review(models.Model):
+    id              = models.CharField(max_length = 1024, primary_key=True, default=uuid.uuid4, editable=False)
     reviewer        = models.ForeignKey(UserAccount, related_name='reviewer')
     reviewee        = models.ForeignKey(UserAccount, related_name='reviewee')
     review          = models.TextField()
@@ -233,22 +243,14 @@ class Review(models.Model):
         ordering = ['created_at']
 
     def __str__(self):
-        return "%s. %s rated %s as %s" % (
-            self.id,
-            self.reviewer.user.first_name, 
-            self.reviewee.user.first_name,
-            self.rating
-        )
-
-    def __str__(self):
-        return "%s. %s rated %s as %s" % (
-            self.id,
+        return "%s rated %s as %s" % (
             self.reviewer.user.first_name, 
             self.reviewee.user.first_name,
             self.rating
         )
 
 class Notification(models.Model):
+    id              = models.CharField(max_length = 1024, primary_key=True, default=uuid.uuid4, editable=False)
     account         = models.ForeignKey(UserAccount)
     title           = models.CharField(max_length=255)
     message         = models.TextField()
