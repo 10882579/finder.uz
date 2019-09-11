@@ -59,9 +59,8 @@ class PostListAPIView(APIView):
     def get(self, request, *args, **kwargs):
         search = request.query_params.get('search')
         posts = Posts.objects.all().exclude(posted = False)
-        
         if search:
-            posts = self.search_filter(search, request.query_params)
+            posts = self.search_filter(search.split(" "), request.query_params)
             
         serializer = PostListSerializer(posts, many=True)
         return Response(serializer.data, status=HTTP_200_OK)
