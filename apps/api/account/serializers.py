@@ -10,7 +10,7 @@ from rest_framework.serializers import (
 )
 
 from apps.api.models import *
-from apps.api.functions import thumbnail, user_rating, random_token
+from apps.api.functions import thumbnail, user_rating
 
 import bcrypt
 import uuid
@@ -178,7 +178,7 @@ class AccountRegistrationSerializer(Serializer):
                                         self.validated_data['password'].encode(), 
                                         bcrypt.gensalt()
                                       )
-                                      
+
     return UserAccount.objects.create(**self.validated_data)
 
 class UserAccountUpdateSerializer(Serializer):
@@ -257,25 +257,30 @@ class UserAccountUpdateSerializer(Serializer):
         account.update(**self.validated_data)
 
 class UserAccountByIdSerializer(Serializer):
-    class Meta:
-        model = UserAccount
-        fields = ['id']
+  account_id      = CharField(source='id')
+  first_name      = CharField(source='user.first_name')
+  last_name       = CharField(source='user.last_name')
+  class Meta:
+    model = UserAccount
+    fields = [
+      'account_id', 
+      'first_name',
+      'last_name',
+    ]
 
-    def to_representation(self, instance):
-        ret = super().to_representation(instance)
+  def to_representation(self, instance):
+    ret = super().to_representation(instance)
 
-        image = ''
-        if instance.image:
-            image = instance.image.url
-        else:
-            image = settings.DEFAULT_MALE_IMG
-            
-        ret['account_id']   = instance.id
-        ret['first_name']   = instance.user.first_name
-        ret['last_name']    = instance.user.last_name
-        ret['image']        = image
-        ret['rating']       = user_rating(instance)
-        return ret
+    image = ''
+    if instance.image:
+      image = instance.image.url
+    else:
+      image = settings.DEFAULT_MALE_IMG
+
+    ret['image']            = image
+    ret['rating']           = user_rating(instance)
+
+    return ret
 
 class UserAccountFollowingsSerializer(Serializer):
     class Meta:

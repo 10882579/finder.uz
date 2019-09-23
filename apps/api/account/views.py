@@ -78,30 +78,17 @@ class UserAccountByIdAPIView(APIView):
             return True
         return False
 
-    def get_chat_room(self, first, second):
-        if first is not None:
-            room = ChatRoom.objects.filter( 
-                Q(first = first, second = second) |
-                Q(first = second, second = first)
-            )
-            if room.exists():
-                return room.first().room
-        return None
-
     def get(self, request, *args, **kwargs):
-        token       = request.META.get('HTTP_X_AUTH_TOKEN')
-        account_id  = kwargs.get('id')
-
+        token           = request.META.get('HTTP_X_AUTH_TOKEN')
         account         = authenticate(token)
-        account_by_id   = get_user_account(account_id)
+        account_by_id   = get_user_account(kwargs.get('id'))
         following       = False
 
         if account is not None:
-            following = self.is_following(account = account, id = account_id)
+            following = self.is_following(account = account, id = kwargs.get('id'))
 
         if account_by_id is not None:
-            room = self.get_chat_room(account, account_by_id)
-            serializer = UserAccountByIdSerializer(account_by_id, context={'room': room})
+            serializer = UserAccountByIdSerializer(account_by_id)
             return Response({'account': serializer.data,'following': following}, status=HTTP_200_OK)
         else:
             return Response({}, status=HTTP_404_NOT_FOUND)
