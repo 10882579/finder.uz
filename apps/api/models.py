@@ -59,6 +59,10 @@ class UserAccount(models.Model):
             return True
         return False
 
+    def update_session(self):
+        self.token = uuid.uuid4()
+        self.save()
+
 
     def update(self, **data):
         email           = data.get('email')

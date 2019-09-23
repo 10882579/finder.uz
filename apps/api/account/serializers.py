@@ -1,17 +1,19 @@
 from django.conf import settings
 from django.db.models import Q
-
+from rest_framework.exceptions import NotAuthenticated
 from rest_framework.serializers import (
-    ModelSerializer,
-    Serializer,
-    CharField,
-    FileField
+  ValidationError,
+  ModelSerializer,
+  Serializer,
+  CharField,
+  FileField
 )
 
 from apps.api.models import *
 from apps.api.functions import thumbnail, user_rating, random_token
 
 import bcrypt
+import uuid
 import re
 
 re_email            = re.compile(r'^[a-zA-Z0-9.+_-]+@[a-zA-Z0-9._-]+\.[a-zA-Z]+$')
@@ -20,152 +22,164 @@ re_alphanumeric     = re.compile(r'[a-z0-9]+$')
 re_alphabetic       = re.compile(r'[a-zA-Z]+$')
 
 class UserAccountSerializer(ModelSerializer):
-    class Meta:
-        model = UserAccount
-        fields = ['email', 'token']
+  account_id      = CharField(source='id')
+  first_name      = CharField(source='user.first_name')
+  last_name       = CharField(source='user.last_name')
+  class Meta:
+    model = UserAccount
+    fields = [
+      'account_id', 
+      'first_name',
+      'last_name',
+      'email', 
+      'token'
+    ]
 
-    def to_representation(self, instance):
-        ret = super().to_representation(instance)
+  def to_representation(self, instance):
+    ret = super().to_representation(instance)
 
-        image = ''
-        if instance.image:
-            image = instance.image.url
-        else:
-            image = settings.DEFAULT_MALE_IMG
+    image = ''
+    if instance.image:
+        image = instance.image.url
+    else:
+        image = settings.DEFAULT_MALE_IMG
 
-        ret['account_id']       = instance.id
-        ret['first_name']       = instance.user.first_name
-        ret['last_name']        = instance.user.last_name
-        ret['image']            = image
-        ret['rating']           = user_rating(instance)
+    ret['image']            = image
+    ret['rating']           = user_rating(instance)
 
-        return ret
+    return ret
 
 class UserLoginSerializer(Serializer):
-    entry       = CharField(required = True)
-    password    = CharField(required = True)
-    class Meta:
-        model = UserAccount
-        fields = (
-            'entry',
-            'password'
-        )
+  entry       = CharField(required = True)
+  password    = CharField(required = True)
+  class Meta:
+    model = UserAccount
+    fields = (
+      'entry',
+      'password'
+    )
 
-    def validate(self, data):
+  def validate(self, data):
+    entry       = data.get('entry')
+    password    = data.get('password')
 
-        entry       = data.get('entry')
-        password    = data.get('password')
+    valid_entry = True
 
-        errors = []
+    account = UserAccount.objects.filter(
+      Q(email = entry) |
+      Q(phone_number = entry)
+    )
+    if account.exists():
+      if account.first().check_password(password):
+        account.first().update_session()
+        data['account'] = account.first()
+      else:
+        raise NotAuthenticated("Invalid entry")
+    else:
+      raise NotAuthenticated("Invalid entry")
 
-        account = UserAccount.objects.filter(
-            Q(email = entry) |
-            Q(phone_number = entry)
-        )
-        if not account.exists():
-            errors.append("Email/Telefon raqam yoki parolingiz noto'g'ri. Iltimos qayta kiriting!")
-
-        elif account.exists():
-            if not account.first().check_password(password):
-                errors.append("Email/Telefon raqam yoki parolingiz noto'g'ri. Iltimos qayta kiriting!")
-            elif account.first().check_password(password):
-                data['account'] = account.first()
-
-        if len(errors) > 0:
-            data['errors'] = errors
-
-        return data
-
-    def update_account(self):
-        account = self.validated_data['account']
-        account.token = random_token()
-        account.save()
+    return data
 
 class UserRegistrationSerializer(Serializer):
-    first_name      = CharField(required = True)
-    last_name       = CharField(required = True)
-    email           = CharField(required = True)
-    phone_number    = CharField(required = True)
-    password        = CharField(required = True)
-    class Meta:
-        model = UserAccount
-        fields = [
-            'first_name',
-            'last_name',
-            'email',
-            'phone_number',
-            'password'
-        ]
+  first_name      = CharField(required = True)
+  last_name       = CharField(required = True)
+  class Meta:
+    model = UserAccount
+    fields = [
+      'first_name',
+      'last_name',
+    ]
+  
+  def validate(self, data):
+    first_name          = data.get('first_name')
+    last_name           = data.get('last_name')
 
-    def check_email_if_exists(self, email):
-        email = UserAccount.objects.filter(email = email)
-        if email.exists():
-            return False
-        return True
+    valid_entry = True
 
-    def check_phone_if_exists(self, phone_number):
-        phone = UserAccount.objects.filter(phone_number = phone_number)
-        if phone.exists():
-            return False
-        return True
+    if len(first_name) < 2 or not re_alphabetic.match(first_name):
+      valid_entry = False
 
-    def validate(self, data):
-        first_name          = data.get('first_name')
-        last_name           = data.get('last_name')
-        email               = data.get('email')
-        phone_number        = data.get('phone_number')
-        password            = data.get('password')
+    if len(last_name) < 2 or not re_alphabetic.match(last_name):
+      valid_entry = False
+    
+    if not valid_entry:
+      raise ValidationError()
+    
+    return data
+  
+  def create(self):
+    first_name      = self.validated_data.get('first_name')
+    last_name       = self.validated_data.get('last_name')
+    
+    return User.objects.create(
+      first_name  = first_name.capitalize(),
+      last_name   = last_name.capitalize()
+    )
 
-        errors = []
+class AccountRegistrationSerializer(Serializer):
+  email           = CharField(required = True)
+  phone_number    = CharField(required = True)
+  password        = CharField(required = True)
+  class Meta:
+    model = UserAccount
+    fields = [
+      'email',
+      'phone_number',
+      'password'
+    ]
 
-        if len(first_name) < 2 or not re_alphabetic.match(first_name):
-            errors.append("Ism ikki yoki undan ortiq va faqat harflardan iborat bo'lishi kerak!")
+  def check_email_if_exists(self, email):
+    email = UserAccount.objects.filter(email = email)
+    if email.exists():
+      return False
+    return True
 
-        if len(last_name) < 2 or not re_alphabetic.match(last_name):
-            errors.append("Familiya ikki yoki undan ortiq va faqat harflardan iborat bo'lishi kerak!")
+  def check_phone_if_exists(self, phone_number):
+    phone = UserAccount.objects.filter(phone_number = phone_number)
+    if phone.exists():
+      return False
+    return True
 
-        if not self.check_email_if_exists(email):
-            errors.append('Kiritilgan email band!')
+  def validate(self, data):
+    email               = data.get('email')
+    phone_number        = data.get('phone_number')
+    password            = data.get('password')
 
-        if not re_email.match(email):
-            errors.append("Kiritilgan email noto'gri kiritilgan!")
+    valid_entry = True
+    errors = []
 
-        if not self.check_phone_if_exists(phone_number):
-            errors.append('Kiritilgan telefon raqam band!')
+    if not self.check_email_if_exists(email):
+      errors.append("email_in_use")
+      valid_entry = False
 
-        if not re_numeric.match(phone_number):
-            errors.append('Kiritilgan telefon raqam noto\'g\'ri!')
+    if not re_email.match(email):
+      valid_entry = False
 
-        if len(password) < 7 or not re_alphanumeric.match(password):
-            errors.append('Kiritilgan yashirin kod 7 yoki undan ortiq raqam yoki harflardan iborat bo\'lishi kerak!')
+    if not self.check_phone_if_exists(phone_number):
+      errors.append("phone_number_in_use")
+      valid_entry = False
 
-        if len(errors) > 0:
-            data['errors'] = errors
+    if not re_numeric.match(phone_number):
+      valid_entry = False
 
-        return data
+    if len(password) < 7 or not re_alphanumeric.match(password):
+      valid_entry = False
 
-    def create(self):
-        password        = self.validated_data.get('password')
-        first_name      = self.validated_data.get('first_name')
-        last_name       = self.validated_data.get('last_name')
-        email           = self.validated_data.get('email')
-        phone_number    = self.validated_data.get('phone_number')
-        if password and first_name and last_name and email and phone_number:
+    if not valid_entry:
+      raise ValidationError(errors)
 
-            user = User.objects.create(
-                first_name  = first_name.capitalize(),
-                last_name   = last_name.capitalize()
-            )
+    return data
 
-            return UserAccount.objects.create(
-                user            = user,
-                email           = email,
-                phone_number    = phone_number,
-                password        = bcrypt.hashpw(password.encode(), bcrypt.gensalt()),
-                token           = random_token()
-            )
+  def create(self, user):
 
-        return None
+    self.validated_data['user'] = user
+    self.validated_data['token'] = uuid.uuid4()
+    self.validated_data['password'] = bcrypt.hashpw(
+                                        self.validated_data['password'].encode(), 
+                                        bcrypt.gensalt()
+                                      )
+                                      
+    return UserAccount.objects.create(**self.validated_data)
 
 class UserAccountUpdateSerializer(Serializer):
     first_name      = CharField(required = False)

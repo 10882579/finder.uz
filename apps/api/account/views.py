@@ -8,25 +8,19 @@ from rest_framework.parsers import MultiPartParser, FormParser
 
 from apps.api.models import UserAccountFollowers, UserAccount, ChatRoom
 from apps.api.account.serializers import *
-from apps.api.functions import random_token, authenticate, get_user_account
+from apps.api.functions import authenticate, get_user_account
 
 class UserLoginAPIView(APIView):
-    renderer_classes = (JSONRenderer, )
+    renderer_classes = (JSONRenderer,)
 
     def post(self, request, *args, **kwargs):
         serializer = UserLoginSerializer(data = request.data)
-        if serializer.is_valid(raise_exception=False):
-            errors = serializer.validated_data.get('errors')
-            if errors is None:
-                serializer.update_account()
-                account      = serializer.validated_data['account']
-                serializer   = UserAccountSerializer(account)
-                return Response(serializer.data, status=HTTP_200_OK)
-                
-            elif errors is not None:
-                return Response(serializer.validated_data['errors'], status=HTTP_400_BAD_REQUEST)
-
-        return Response({}, status=HTTP_401_UNAUTHORIZED)
+        if serializer.is_valid(raise_exception=True):
+            account = serializer.validated_data['account']
+            serializer = UserAccountSerializer(account)
+            return Response(serializer.data, status=HTTP_200_OK)
+        else:
+            return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
     def get(self, request, *args, **kwargs):
         return Response({}, status=HTTP_400_BAD_REQUEST)
@@ -35,19 +29,14 @@ class UserRegistrationAPIView(APIView):
     renderer_classes = (JSONRenderer, )
 
     def post(self, request, *args, **kwargs):
-        serializer = UserRegistrationSerializer(data = request.data)
-        serializer.is_valid(raise_exception = False)
-        errors = serializer.validated_data.get('errors')
-        if errors is None:
-            account = serializer.create()
-            if account is not None:
-                serializer = UserAccountSerializer(account)
-                return Response(serializer.data, status=HTTP_200_OK)
-            return Response({}, status=HTTP_401_UNAUTHORIZED)
-        elif errors is not None:
-            return Response(errors, status=HTTP_400_BAD_REQUEST)
-
-        return Response({}, status=HTTP_401_UNAUTHORIZED)
+        user_serializer         = UserRegistrationSerializer(data = request.data)
+        account_serializer      = AccountRegistrationSerializer(data = request.data)
+        if user_serializer.is_valid(raise_exception = True) and account_serializer.is_valid(raise_exception = True):
+            user        = user_serializer.create()
+            account     = account_serializer.create(user = user)
+            serializer  = UserAccountSerializer(account)
+            return Response(serializer.data, status=HTTP_200_OK)
+        return Response({}, status=HTTP_400_BAD_REQUEST)
 
     def get(self, request, *args, **kwargs):
         return Response({}, status=HTTP_400_BAD_REQUEST)
